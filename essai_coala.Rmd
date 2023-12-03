@@ -1,0 +1,124 @@
+---
+title: "Untitled"
+author: "Louis Schroll"
+date: "2023-12-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(coala)
+```
+
+
+```{r}
+# calcule du Fst à partir des pi: Fst = 1 - mean(pi1,pi2) / pitot
+
+plot_hist_fst = function(simulation){
+  hist(simulation$fst, 
+       main = "Distribution of Fst values",
+       xlab="Fst values", 
+       ylab="Frequency",
+       col="darkblue")
+}
+plot_fst_vs_pi = function(simulation){
+  plot(simulation$pitot,simulation$fst, 
+       main = "Fst vs pi",
+       xlab = "Pi de Tajima",
+       ylab = "Fst", 
+       pch = 19, 
+       col = "darkblue",
+       xlim = c(0,12))
+}
+```
+
+Scenario 1 : 2 populations sans migration
+
+```{r}
+model <- coal_model(sample_size = c(10,8),loci_number = 1000,loci_length = 1000,ploidy = 2) + 
+  feat_mutation(rate = 1) + 
+  feat_pop_merge(time = 1,pop_source = 1,pop_target = 2) + 
+  feat_migration(rate = 0,symmetric = T,time = 1) +
+  sumstat_nucleotide_div(name = "pi1",population = 1) +
+  sumstat_nucleotide_div(name = "pi2",population = 2) +
+  sumstat_nucleotide_div(name = "pitot",population = "all")
+
+# Simulation du modèle
+sim_scenario1 <- simulate(model,seed = 1)
+
+# calcule du Fst à partir des pi: Fst = 1 - mean(pi1,pi2) / pitot
+sim_scenario1$fst <- 1- (sim$pi1+sim$pi2)/(2*sim$pitot)
+
+plot_hist_fst(sim_scenario1)
+plot_fst_vs_pi(sim_scenario1)
+```
+
+Scenario 2 : 2 populations avec migration constante
+
+```{r}
+model <- coal_model(sample_size = c(10,8),loci_number = 1000,loci_length = 1000,ploidy = 2) + 
+  feat_mutation(rate = 1) + 
+  feat_pop_merge(time = 1,pop_source = 1,pop_target = 2) + 
+  feat_migration(rate = 1,symmetric = T,time = 1) +
+  feat_migration(rate = 1,symmetric = T,time = 100) +
+  sumstat_nucleotide_div(name = "pi1",population = 1) +
+  sumstat_nucleotide_div(name = "pi2",population = 2) +
+  sumstat_nucleotide_div(name = "pitot",population = "all")
+
+# Simulation du modèle
+sim_scenario2 <- simulate(model,seed = 1)
+# calcule du Fst à partir des pi: Fst = 1 - mean(pi1,pi2) / pitot
+sim_scenario2$fst <- 1- (sim_scenario2$pi1+sim_scenario2$pi2)/(2*sim_scenario2$pitot)
+
+plot_hist_fst(sim_scenario2)
+plot_fst_vs_pi(sim_scenario2)
+```
+
+
+Scenario 3 : 2 populations avec migration qui se stop
+
+```{r}
+model <- coal_model(sample_size = c(10,8),loci_number = 1000,loci_length = 1000,ploidy = 2) + 
+  feat_mutation(rate = 1) + 
+  feat_pop_merge(time = 1,pop_source = 1,pop_target = 2) + 
+  feat_migration(rate = 1,symmetric = T,time = 100) +
+  feat_migration(rate = 0,symmetric = T,time = 1) +
+  sumstat_nucleotide_div(name = "pi1",population = 1) +
+  sumstat_nucleotide_div(name = "pi2",population = 2) +
+  sumstat_nucleotide_div(name = "pitot",population = "all")
+
+# Simulation du modèle
+sim_scenario3 <- simulate(model,seed = 1)
+
+# calcule du Fst à partir des pi: Fst = 1 - mean(pi1,pi2) / pitot
+sim_scenario3$fst <- 1- (sim_scenario3$pi1+sim_scenario3$pi2)/(2*sim_scenario3$pitot)
+
+plot_hist_fst(sim_scenario3)
+plot_fst_vs_pi(sim_scenario3)
+```
+
+Scenario 4 : 2 populations avec migration qui se stop et qui reprend
+
+```{r}
+model <- coal_model(sample_size = c(10,8),loci_number = 1000,loci_length = 1000,ploidy = 2) + 
+  feat_mutation(rate = 1) + 
+  feat_pop_merge(time = 1,pop_source = 1,pop_target = 2) + 
+  feat_migration(rate = 1,symmetric = T,time = 1000) +
+  feat_migration(rate = 0,symmetric = T,time = 100) +
+  feat_migration(rate = 1,symmetric = T,time = 1) +
+  sumstat_nucleotide_div(name = "pi1",population = 1) +
+  sumstat_nucleotide_div(name = "pi2",population = 2) +
+  sumstat_nucleotide_div(name = "pitot",population = "all")
+
+# Simulation du modèle
+sim_scenario4 <- simulate(model,seed = 1)
+
+# calcule du Fst à partir des pi: Fst = 1 - mean(pi1,pi2) / pitot
+sim_scenario4$fst <- 1- (sim_scenario4$pi1+sim_scenario4$pi2)/(2*sim_scenario4$pitot)
+
+plot_hist_fst(sim_scenario4)
+plot_fst_vs_pi(sim_scenario4)
+```
