@@ -206,6 +206,8 @@ simulation <- function(geno0,Npop,self,rec,mu11,mu12,mu21,mu22,fit,Tmax,migr,pop
   geno <- geno0
   tab.a <- c()
   tab.b <- c()
+  tab.Ha = c()
+  tab.Hb = c()
   tab.LD <- c()
   for(t in 1:Tmax){
     newgeno <- generation(geno,Npop,self,rec,mu11,mu12,mu21,mu22,fit,migr,pop_source)
@@ -229,46 +231,164 @@ simulation <- function(geno0,Npop,self,rec,mu11,mu12,mu21,mu22,fit,Tmax,migr,pop
     fa <- X3 + X4
     fb <- X2 + X4
     LD <- X1*X4 - X2*X3
+    Ha = G13 + G14 + G23 + G24
+    Hb = G12 + G14 + G23 + G34
     tab.a <- c(tab.a,fa)
     tab.b <- c(tab.b,fb)
+    tab.Ha = c(tab.Ha, Ha)
+    tab.Hb = c(tab.Hb, Hb)
     tab.LD <- c(tab.LD,LD)
     geno <- newgeno
   }
-  return(list("a"=tab.a,"b"=tab.b,"LD"=tab.LD, "final_freq" = c(G11, G12, G13, G14, 
+  return(list("a"=tab.a,"b"=tab.b,"LD"=tab.LD, 
+              "Ha" = tab.Ha, "Hb" = tab.Hb,
+              "final_freq" = c(G11, G12, G13, G14, 
                                                                 G22, G23, G24, G33, 
                                                                 G34, G44)))
 }
 
 
 
-#speciation scenario
+#SPECIATION SCENARIO: progressive separation
 
-# First période : completely separated
+# First period
 
-# Population A
-fit.matrix <- fitness(0.5,0.21,0.5,0.25,0,0,0,0) # Two loci with additive selection
+fit.matrix <- fitness(1,0.4,0,0,0,0,0,0) # Two loci with additive selection
 sim <- simulation(geno0 = c(1,0,0,0,0,0,0,0,0,0),Npop = 100,
                   self = 0,rec=0.00001,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
                   fit = fit.matrix,Tmax = 1000, 
-                  migr=0.6, pop_source=c(1,0,0,0,0,0,0,0,0,0))
-
-# Population B est garde ces fréquences, population sources
+                  migr= 1, pop_source=c(1,0,0,0,0,0,0,0,0,0))
 
 
-# Second période : partially separated
-
-# Population A
+# Second period
 sim2 <- simulation(geno0 = sim$final_freq, Npop = 100,
-                  self = 0,rec=0.00001,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
-                  fit = fit.matrix,Tmax = 1000, 
-                  migr=0, pop_source=c(1,0,0,0,0,0,0,0,0,0))
+                   self = 0,rec=0.00001,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
+                   fit = fit.matrix,Tmax = 1000, 
+                   migr=0.1, pop_source=c(1,0,0,0,0,0,0,0,0,0))
 
-all_a = c(sim$a, sim2$a)
-all_b = c(sim$b, sim2$b)
-all_LD = c(sim$LD, sim2$LD)
+# Third period
+sim3 <- simulation(geno0 = sim2$final_freq, Npop = 100,
+                   self = 0,rec=0.00001,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
+                   fit = fit.matrix,Tmax = 1000, 
+                   migr=0.05, pop_source=c(1,0,0,0,0,0,0,0,0,0))
 
-plot(NULL,xlim = c(0,2000),ylim=c(-0.1,1))
+
+all_a = c(sim$a, sim2$a, sim3$a)
+all_b = c(sim$b, sim2$b, sim3$b)
+all_LD = c(sim$LD, sim2$LD, sim3$L)
+all_Ha = c(sim$Ha, sim2$Ha, sim3$Ha)
+all_Hb = c(sim$Hb, sim2$Hb, sim3$Hb)
+
+plot(NULL,xlim = c(0,3000),ylim=c(-0.1,1))
 lines(all_a,col="lightblue")
 lines(all_b,col="orange")
 lines(all_LD,col="black")
 abline(0,0,lty=2)
+
+plot(NULL,xlim = c(0,3000),ylim=c(-0.1,1))
+lines(all_Ha,col="red")
+lines(all_Hb,col="green")
+lines(all_LD,col="black")
+abline(0,0,lty=2)
+
+
+
+## FUNCTION
+
+final_state = function(rec_=0.00001){
+  
+  
+  #SPECIATION SCENARIO: progressive separation
+  
+  # First period
+  
+  fit.matrix <- fitness(1,0.4,0,0,0,0,0,0) # Two loci with additive selection
+  sim <- simulation(geno0 = c(1,0,0,0,0,0,0,0,0,0),Npop = 100,
+                    self = 0,rec=rec_,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
+                    fit = fit.matrix,Tmax = 1000, 
+                    migr= 1, pop_source=c(1,0,0,0,0,0,0,0,0,0))
+  
+  
+  # Second period
+  sim2 <- simulation(geno0 = sim$final_freq, Npop = 100,
+                     self = 0,rec=rec_,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
+                     fit = fit.matrix,Tmax = 1000, 
+                     migr=0.1, pop_source=c(1,0,0,0,0,0,0,0,0,0))
+  
+  # Third period
+  sim3 <- simulation(geno0 = sim2$final_freq, Npop = 100,
+                     self = 0,rec=rec_,mu11 = 0.01,mu12 = 0.01,mu21 = 0.01,mu22=0.01,
+                     fit = fit.matrix,Tmax = 1000, 
+                     migr=0.05, pop_source=c(1,0,0,0,0,0,0,0,0,0))
+  
+  
+  
+  all_a = c(sim$a, sim2$a, sim3$a)
+  all_b = c(sim$b, sim2$b, sim3$b)
+  all_LD = c(sim$LD, sim2$LD, sim3$L)
+  all_Ha = c(sim$Ha, sim2$Ha, sim3$Ha)
+  all_Hb = c(sim$Hb, sim2$Hb, sim3$Hb)
+  
+  
+  f_a = mean(all_a[length(all_a)-100:length(all_a)])
+  f_Hb = mean(all_b[length(all_b)-100:length(all_b)])
+  f_Ha = mean(all_Ha[length(all_Ha)-100:length(all_Ha)])
+  f_Hb = mean(all_Hb[length(all_Hb)-100:length(all_Hb)])
+  LD = mean(all_LD[length(all_LD)-100:length(all_LD)])
+  
+  return(list("f_a"=f_a,"f_b"=f_b,"LD"=LD,
+              "f_Ha" = f_Ha, "f_Hb" = f_Hb))
+  
+}
+
+
+f_Ha_list = c()
+f_Hb_list = c()
+f_LD_list = c()
+
+rec_list = seq(0.1, 0, length = 35)
+
+for (i in rec_list){
+  res = final_state(rec_ = i)
+  f_Ha_list = c(f_Ha_list, res$f_Ha)
+  f_Hb_list = c(f_Hb_list, res$f_Hb)
+  f_LD_list = c(f_LD_list, res$LD)
+}
+
+F_st_a = f_Ha_list 
+F_st_b = f_Hb_list 
+
+library(ggplot2)
+
+
+data_a <- data.frame(x = rec_list, y = F_st_a)
+data_b <- data.frame(x = rec_list, y = F_st_b)
+
+
+ggplot() +
+  geom_point(data = data_a, aes(x, y)) +
+  geom_smooth(data = data_a, aes(x, y), method = "lm", se = FALSE, col = "red")  +
+  geom_point(data = data_b, aes(x, y)) +
+  geom_smooth(data = data_b, aes(x, y), method = "lm", se = FALSE, col = "green") +
+  labs(title = "",
+       x = "rec",
+       y = "Hb et Ha")
+
+
+
+ggplot()  +
+  geom_point(data = data_b, aes(x, y)) +
+  geom_smooth(data = data_b, aes(x, y), method = "lm", se = FALSE, col = "green") +
+  labs(title = "",
+       x = "rec",
+       y = "Hb")
+
+
+data_LD <- data.frame(x = rec_list, y = f_LD_list)
+
+ggplot()  +
+  geom_point(data = data_LD, aes(x, y)) +
+  geom_smooth(data = data_LD, aes(x, y), method = "lm", se = FALSE, col = "black") +
+  labs(title = "",
+       x = "rec",
+       y = "Hb")
